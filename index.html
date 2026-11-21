@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caso 13 · Prototipo digital T2 · Diagnóstico de vida útil de PC</title>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#ffffff; --ink:#1c2430; --mute:#5b6675; --line:#d7dce3;
+  --accent:#1f5fbf; --accent-soft:#e6efff;
+  --ok:#14703a; --ok-bg:#e3f5ea; --warn:#8a5a00; --warn-bg:#fff1d1; --crit:#a3231f; --crit-bg:#fde5e3;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#12161c;--card:#1a2029;--ink:#e6ebf2;--mute:#9aa6b6;--line:#2c3542;--accent:#6aa3ff;--accent-soft:#1e2c47;
+  --ok:#6fd397;--ok-bg:#15301f;--warn:#f2c35b;--warn-bg:#3a2e10;--crit:#ff8d86;--crit-bg:#3d1b19;}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:16px 22px;border-bottom:1px solid var(--line);background:var(--card)}
+header h1{margin:0;font-size:19px}
+header p{margin:4px 0 0;color:var(--mute);font-size:13px}
+.aviso{margin:14px 22px 0;padding:10px 14px;border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:6px;font-size:13px}
+main{display:grid;grid-template-columns:330px 1fr;gap:16px;padding:16px 22px 28px}
+@media (max-width:980px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px}
+.card h2{margin:0 0 10px;font-size:15px}
+label{display:block;font-size:13px;color:var(--mute);margin:9px 0 3px}
+input[type=text],select{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+input:disabled,select:disabled{opacity:.6}
+.fila{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{font:inherit;padding:7px 11px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.5;cursor:not-allowed}
+.botones{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font-size:12.5px;padding:4px 9px}
+.derecha{display:grid;gap:16px}
+svg{width:100%;height:auto;display:block}
+svg .blk{fill:var(--card);stroke:var(--line);stroke-width:1.5;transition:all .25s}
+svg .blk.on{fill:var(--accent-soft);stroke:var(--accent);stroke-width:3}
+svg text{fill:var(--ink);font-size:12px}
+svg text.sm{font-size:10.5px;fill:var(--mute)}
+svg .bus{fill:var(--line);transition:all .25s}
+svg .bus.on{fill:var(--accent)}
+svg .stub{stroke:var(--line);stroke-width:5;transition:all .25s}
+svg .stub.on{stroke:var(--accent)}
+#busEtq{font-family:var(--mono);font-size:11px}
+.pasoTxt{border-left:4px solid var(--accent);padding:6px 10px;background:var(--accent-soft);border-radius:4px;min-height:64px}
+.pasoTxt b{display:block;margin-bottom:2px}
+.progreso{font-size:12px;color:var(--mute);margin-bottom:6px}
+.tres{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media (max-width:1250px){.tres{grid-template-columns:1fr}}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left}
+th{color:var(--mute);font-weight:600}
+td.m,.m{font-family:var(--mono)}
+tr.hl td{background:var(--accent-soft)}
+.est{display:inline-block;padding:2px 10px;border-radius:12px;font-weight:700;font-size:13px;border:1px solid var(--line)}
+.est.NORMAL{background:var(--ok-bg);color:var(--ok)}
+.est.ADVERTENCIA{background:var(--warn-bg);color:var(--warn)}
+.est.CRÍTICO{background:var(--crit-bg);color:var(--crit)}
+.est.RECHAZADO{background:var(--crit-bg);color:var(--crit)}
+pre{margin:0;padding:12px;background:#0f1319;color:#d9e1ee;border-radius:6px;overflow:auto;font:12.5px/1.45 var(--mono);white-space:pre-wrap;min-height:120px}
+.flags span{display:inline-block;min-width:54px;margin:2px 4px 2px 0;padding:2px 6px;border:1px solid var(--line);border-radius:4px;font-family:var(--mono);font-size:12px;text-align:center}
+.flags span.uno{background:var(--accent-soft);border-color:var(--accent)}
+.nota{font-size:12px;color:var(--mute);margin-top:6px}
+.err{color:var(--crit);font-size:13px;margin:6px 0 0}
+footer{padding:0 22px 24px;color:var(--mute);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Caso 13 · Extensión de la vida útil de computadoras — Prototipo digital (T2)</h1>
+  <p>Grupo 13 · Arquitectura del Computador · UPN 2026-2 · Diagnóstico lógico con datos ingresados: entradas → CPU (UC, ALU, registros) → memoria → salidas</p>
+</header>
+<div class="aviso"><b>Alcance:</b> simulación didáctica. Las métricas son <b>ingresadas o simuladas</b>; el programa no mide el hardware ni accede a archivos del equipo. Los registros, banderas y direcciones son <b>ilustrativos</b> (x86-64 conceptual) y no el estado real del procesador. Reglas preliminares del proyecto, no estándares de falla.</div>
+
+<main>
+  <section class="card" aria-label="Entradas">
+    <h2>Entradas (E1 y E2)</h2>
+    <label for="equipo">E2 · Ficha F01 del equipo</label>
+    <select id="equipo">
+      <option value="">Sin ficha F01 (disco manual)</option>
+      <option value="PC-01">PC-01 · i3 4.ª gen · 4 GB</option>
+      <option value="PC-02">PC-02 · i5 6.ª gen · 8 GB</option>
+      <option value="PC-03">PC-03 · AMD A8 · 4 GB</option>
+    </select>
+    <div class="nota" id="fichaNota"></div>
+    <label>E1 · Métricas ingresadas (teclado)</label>
+    <div class="fila">
+      <div><label for="cpu">Uso de CPU (%)</label><input type="text" id="cpu" inputmode="decimal" value="50"></div>
+      <div><label for="min">Minutos con ese uso</label><input type="text" id="min" inputmode="decimal" value="0"></div>
+      <div><label for="ram">Uso de RAM (%)</label><input type="text" id="ram" inputmode="decimal" value="30"></div>
+      <div><label for="libre">Espacio libre (%)</label><input type="text" id="libre" inputmode="decimal" value="40"></div>
+    </div>
+    <label for="disco">Tipo de disco</label>
+    <select id="disco"><option>SSD</option><option>HDD</option></select>
+    <div class="botones">
+      <button class="pri" id="bEjecutar">▶ Ejecutar paso a paso</button>
+      <button id="bSiguiente">Siguiente paso</button>
+      <button id="bDirecto">Resultado directo</button>
+      <button id="bReiniciar">Reiniciar</button>
+      <button id="bRef" title="Carga CPU, minutos, RAM y libre de la Tabla 2 para el equipo elegido">Métricas de referencia</button>
+    </div>
+    <label>Escenarios del informe</label>
+    <div class="chips" id="chips"></div>
+    <p class="err" id="errGen" role="alert"></p>
+  </section>
+
+  <div class="derecha">
+    <section class="card" aria-label="Arquitectura en funcionamiento">
+      <h2>Arquitectura en funcionamiento</h2>
+      <svg viewBox="-14 0 794 392" role="img" aria-label="Diagrama: entradas, CPU con unidad de control, ALU y registros, memoria RAM, bus y salidas">
+        <rect class="blk" id="nE1" x="10" y="26" width="176" height="56" rx="6"/><text x="22" y="48">E1 · Teclado / formulario</text><text class="sm" x="22" y="66">CPU, minutos, RAM, libre</text>
+        <rect class="blk" id="nE2" x="10" y="106" width="176" height="56" rx="6"/><text x="22" y="128">E2 · Ficha F01 (JSON)</text><text class="sm" x="22" y="146">RAM, ranuras, interfaz</text>
+        <path class="stub" id="sE1" d="M10 54 H-4 V240" fill="none"/><line class="stub" id="sE2" x1="150" y1="162" x2="150" y2="240"/>
+        <rect class="blk" id="nCPU" x="230" y="14" width="330" height="214" rx="8"/><text x="244" y="34" style="font-weight:700">CPU</text>
+        <rect class="blk" id="nUC" x="244" y="46" width="146" height="70" rx="6"/><text x="256" y="68">Unidad de control</text><text class="sm" x="256" y="86">ciclo de instrucción</text><text class="sm" id="irTxt" x="256" y="104" style="font-family:var(--mono)">IR: —</text>
+        <rect class="blk" id="nALU" x="404" y="46" width="144" height="70" rx="6"/><text x="416" y="68">ALU</text><text class="sm" x="416" y="86">CMP · AND · OR</text><text class="sm" id="aluTxt" x="416" y="104" style="font-family:var(--mono)">—</text>
+        <rect class="blk" id="nREG" x="244" y="128" width="304" height="86" rx="6"/><text x="256" y="148">Registros (ilustrativo)</text>
+        <text class="sm" id="regTxt1" x="256" y="168" style="font-family:var(--mono)">AL=— BL=— CL=— DL=—</text>
+        <text class="sm" id="regTxt2" x="256" y="186" style="font-family:var(--mono)">FLAGS CF=— ZF=— SF=— OF=—</text>
+        <text class="sm" id="regTxt3" x="256" y="204" style="font-family:var(--mono)">IP=0</text>
+        <line class="stub" id="sCPU" x1="395" y1="228" x2="395" y2="240"/>
+        <rect class="blk" id="nRAM" x="610" y="14" width="160" height="214" rx="8"/><text x="624" y="34" style="font-weight:700">Memoria (RAM)</text>
+        <text class="sm" x="624" y="54">variables y umbrales</text>
+        <text class="sm m" id="ramTxt" x="624" y="76" style="font-family:var(--mono)"></text>
+        <line class="stub" id="sRAM" x1="690" y1="228" x2="690" y2="240"/>
+        <rect class="bus" id="nBUS" x="10" y="240" width="760" height="30" rx="6"/>
+        <text x="22" y="259" style="fill:var(--ink);font-weight:600">BUS · datos · direcciones · control</text>
+        <text id="busEtq" x="330" y="259" style="fill:var(--ink)"></text>
+        <line class="stub" id="sS1" x1="270" y1="270" x2="270" y2="306"/><line class="stub" id="sS2" x1="500" y1="270" x2="500" y2="306"/>
+        <rect class="blk" id="nS1" x="190" y="306" width="170" height="64" rx="6"/><text x="202" y="328">S1 · Consola</text><text class="sm" x="202" y="346">estado y recomendaciones</text>
+        <rect class="blk" id="nS2" x="420" y="306" width="170" height="64" rx="6"/><text x="432" y="328">S2 · Archivo .txt</text><text class="sm" x="432" y="346">reporte exportable (F05)</text>
+      </svg>
+      <div class="progreso" id="progreso">Paso 0 de 0</div>
+      <div class="pasoTxt" id="pasoTxt"><b>Listo</b>Elija un escenario y pulse «Ejecutar paso a paso».</div>
+    </section>
+
+    <div class="tres">
+      <section class="card"><h2>Memoria (variables)</h2>
+        <table><thead><tr><th>Variable</th><th>Dir. simulada</th><th>Valor</th></tr></thead><tbody id="tMem"></tbody></table>
+        <div class="nota">Direcciones inventadas para ilustrar la lectura y la escritura; no corresponden a la RAM real.</div>
+      </section>
+      <section class="card"><h2>ALU y banderas</h2>
+        <div id="aluDet" class="m" style="font-size:12.5px;min-height:70px;white-space:pre-wrap">Sin operación todavía.</div>
+        <div class="flags" id="flags"></div>
+        <div class="nota">CMP A,B calcula A−B en 8 bits (complemento a dos). Si el dato es decimal, la comparación se hace en coma flotante y no se muestran banderas.</div>
+      </section>
+      <section class="card"><h2>Reglas y decisión</h2>
+        <table><tbody id="tReglas"></tbody></table>
+        <div style="margin-top:10px">Estado: <span class="est" id="estado">—</span></div>
+        <div class="nota" id="estNota"></div>
+      </section>
+    </div>
+
+    <section class="card"><h2>S1 · Salida de consola</h2>
+      <pre id="consola">(sin ejecución)</pre>
+      <div class="botones"><button id="bDescargar" disabled>S2 · Descargar reporte .txt</button>
+      <button id="bCopiar" disabled>Copiar reporte</button><span class="nota" id="copiaMsg"></span></div>
+    </section>
+  </div>
+</main>
+<footer>Misma lógica que <span class="m">diagnostico_pc.py</span> (R1: CPU &gt; 85 % durante ≥ 10 min · R2: RAM &gt; 80 % · R3: libre &lt; 15 % · R4: CPU &gt; 85 % durante &lt; 10 min · CRÍTICO = R1 ∨ R2 · ADVERTENCIA = ¬CRÍTICO ∧ (R3 ∨ R4) · HDD solo agrega una oportunidad de mejora). Las recomendaciones de RAM y SSD son preliminares y no se han comprobado físicamente.</footer>
+
+<script id="logica">
+/* ---------- Lógica del prototipo (equivalente a diagnostico_pc.py) ---------- */
+const UMBRAL_CPU = 85, UMBRAL_RAM = 80, UMBRAL_LIBRE = 15, MIN_CPU_SOSTENIDO = 10;
+const TIPOS_RAM = ["DDR3", "DDR4", "DDR5"], INTERFACES = ["SATA", "M.2", "IDE"];
+const EQUIPOS_REFERENCIA = {
+  "PC-01": {ficha: {id: "PC-01", cpu_modelo: "Intel Core i3 (4.ª gen)", ram_gb: 4, tipo_ram: "DDR3", ram_max_gb: 8, ranuras_libres: 0, disco: "HDD", interfaz: "SATA"}, metricas: {cpu: 90, minutos: 15, ram: 95, libre: 40}},
+  "PC-02": {ficha: {id: "PC-02", cpu_modelo: "Intel Core i5 (6.ª gen)", ram_gb: 8, tipo_ram: "DDR4", ram_max_gb: 16, ranuras_libres: 1, disco: "HDD", interfaz: "SATA"}, metricas: {cpu: 65, minutos: 0, ram: 85, libre: 60}},
+  "PC-03": {ficha: {id: "PC-03", cpu_modelo: "AMD A8", ram_gb: 4, tipo_ram: "DDR3", ram_max_gb: 16, ranuras_libres: 1, disco: "HDD", interfaz: "SATA"}, metricas: {cpu: 88, minutos: 15, ram: 98, libre: 30}}
+};
+
+function g(v){ // equivalente a format(v, "g") de Python para los valores usados
+  if (Number.isNaN(v)) return "nan";
+  if (v === Infinity) return "inf";
+  if (v === -Infinity) return "-inf";
+  return String(Number(v.toPrecision(6)));
+}
+function aNumero(texto){ // float() de Python: acepta coma decimal (se reemplaza), nan e inf
+  const s = String(texto).trim().replace(",", ".");
+  if (/^[+-]?(nan|inf|infinity)$/i.test(s)) {
+    const n = s.toLowerCase().replace(/^[+-]/, "");
+    return {ok: true, v: n === "nan" ? NaN : (s[0] === "-" ? -Infinity : Infinity)};
+  }
+  if (/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(s)) return {ok: true, v: parseFloat(s)};
+  return {ok: false};
+}
+function validarPorcentaje(texto, nombre){
+  const r = aNumero(texto);
+  if (!r.ok) throw new Error(`${nombre}: '${texto}' no es un número.`);
+  if (!(r.v >= 0 && r.v <= 100)) throw new Error(`${nombre}: ${g(r.v)} fuera de rango (debe estar entre 0 y 100).`);
+  return r.v;
+}
+function validarMinutos(texto){
+  const r = aNumero(texto);
+  if (!r.ok) throw new Error(`Minutos: '${texto}' no es un número.`);
+  if (!Number.isFinite(r.v)) throw new Error(`Minutos: '${texto}' no es un número finito.`);
+  if (r.v < 0) throw new Error("Minutos: no puede ser negativo.");
+  return r.v;
+}
+function validarOpcion(texto, nombre, opciones){
+  const v = String(texto).trim().toUpperCase();
+  if (!opciones.includes(v)) throw new Error(`${nombre}: '${texto}' no válido (use: ${opciones.join(", ")}).`);
+  return v;
+}
+
+function evaluar(cpu, minutos, ram, disco, libre){
+  const hallazgos = [], oportunidades = [];
+  const cpuSost = cpu > UMBRAL_CPU && minutos >= MIN_CPU_SOSTENIDO;
+  const cpuPico = cpu > UMBRAL_CPU && minutos < MIN_CPU_SOSTENIDO;
+  const ramAlta = ram > UMBRAL_RAM;
+  const pocoEspacio = libre < UMBRAL_LIBRE;
+  let estado;
+  if (cpuSost || ramAlta) estado = "CRÍTICO";
+  else if (pocoEspacio || cpuPico) estado = "ADVERTENCIA";
+  else estado = "NORMAL";
+  if (cpuSost) hallazgos.push(`CPU > ${UMBRAL_CPU} % de forma sostenida (${g(minutos)} min). Señal preliminar: reevaluar con una carga representativa.`);
+  if (cpuPico) hallazgos.push(`CPU > ${UMBRAL_CPU} % solo ${g(minutos)} min (< ${MIN_CPU_SOSTENIDO} min): posible pico transitorio; volver a medir.`);
+  if (ramAlta) hallazgos.push(`RAM > ${UMBRAL_RAM} %: posible presión de memoria. El uso efectivo de paginación requiere indicadores adicionales.`);
+  if (pocoEspacio) hallazgos.push(`Espacio libre < ${UMBRAL_LIBRE} %: liberar espacio de almacenamiento.`);
+  if (disco === "HDD") oportunidades.push("OPORTUNIDAD DE MEJORA: el equipo usa HDD; evaluar migración a SSD (no cambia el estado por sí sola).");
+  if (!hallazgos.length && !oportunidades.length) hallazgos.push("Equipo en buen estado según las reglas preliminares.");
+  return {estado, hallazgos, oportunidades, reglas: {R1: cpuSost, R2: ramAlta, R3: pocoEspacio, R4: cpuPico}};
+}
+
+function recomendar(cpu, minutos, ram, disco, libre, ficha){
+  const recs = [];
+  const cpuSost = cpu > UMBRAL_CPU && minutos >= MIN_CPU_SOSTENIDO;
+  const cpuPico = cpu > UMBRAL_CPU && minutos < MIN_CPU_SOSTENIDO;
+  if (ram > UMBRAL_RAM) {
+    if (!ficha) recs.push("RAM: evaluar ampliación (recomendación preliminar). Sin ficha F01, la compatibilidad (tipo de memoria, ranuras, máximo de la placa) debe validarse técnicamente.");
+    else if (ficha.ram_gb >= ficha.ram_max_gb) recs.push(`RAM: la placa admite como máximo ${ficha.ram_max_gb} GB y ya hay ${ficha.ram_gb} GB; no es posible ampliar. Revisar la carga de aplicaciones.`);
+    else if (ficha.ranuras_libres > 0) recs.push(`RAM: agregar módulo ${ficha.tipo_ram} (hasta ${ficha.ram_max_gb} GB en total; ${ficha.ranuras_libres} ranura(s) libre(s)). Verificar consumo sostenido.`);
+    else recs.push(`RAM: sin ranuras libres; solo sustituir módulos ${ficha.tipo_ram} por otros de mayor capacidad (máx. ${ficha.ram_max_gb} GB). Verificar consumo sostenido.`);
+  }
+  if (disco === "HDD") {
+    if (!ficha) recs.push("Disco: evaluar migración a SSD; verificar bahía/interfaz disponible.");
+    else if (ficha.interfaz === "SATA" || ficha.interfaz === "M.2") recs.push(`Disco: migración a SSD ${ficha.interfaz} viable según la ficha; confirmar espacio físico y clonación.`);
+    else recs.push(`Disco: interfaz ${ficha.interfaz} no admite SSD SATA/M.2 estándar; requiere validación técnica antes de recomendar.`);
+  }
+  if (libre < UMBRAL_LIBRE) recs.push("Almacenamiento: liberar espacio y volver a medir después de aplicar la mejora.");
+  if (cpuPico) recs.push("CPU: volver a medir con una carga representativa antes de concluir.");
+  if (cpuSost) recs.push("CPU: aplicar primero las mejoras de RAM/SSD y volver a medir. El reemplazo del equipo solo se evalúa si persiste el problema, considerando compatibilidad, antigüedad, requisitos del software, estado general y costos.");
+  if (!recs.length) recs.push("Sin acciones inmediatas. Mantener monitoreo periódico.");
+  return recs;
+}
+
+function tablaMejoras(ram, disco, libre, ficha){
+  if (!ficha) return [["RAM", "sin ficha F01", ram > UMBRAL_RAM ? "validar compatibilidad antes de proponer una capacidad" : "sin cambio"],
+                      ["Disco", disco, disco === "HDD" ? "SSD, sujeto a validar bahía e interfaz" : "sin cambio"]];
+  const filas = [];
+  if (ram > UMBRAL_RAM) {
+    const actual = `${ficha.ram_gb} GB ${ficha.tipo_ram}`;
+    if (ficha.ram_gb >= ficha.ram_max_gb) filas.push(["RAM", actual, `sin ampliación posible (máx. ${ficha.ram_max_gb} GB)`]);
+    else {
+      const meta = Math.min(ficha.ram_gb * 2, ficha.ram_max_gb);
+      const forma = ficha.ranuras_libres > 0 ? "agregar módulo" : "sustituir módulos, sin ranuras libres";
+      filas.push(["RAM", actual, `${meta} GB ${ficha.tipo_ram} (${forma})`]);
+    }
+  } else filas.push(["RAM", `${ficha.ram_gb} GB ${ficha.tipo_ram}`, "sin cambio"]);
+  if (disco === "HDD") {
+    if (ficha.interfaz === "SATA" || ficha.interfaz === "M.2") filas.push(["Disco", `HDD (${ficha.interfaz})`, `SSD ${ficha.interfaz}`]);
+    else filas.push(["Disco", `HDD (${ficha.interfaz})`, "SSD solo tras validación técnica"]);
+  } else filas.push(["Disco", `SSD (${ficha.interfaz})`, "sin cambio"]);
+  if (libre < UMBRAL_LIBRE) filas.push(["Espacio libre", `${g(libre)} %`, `liberar espacio hasta superar ${UMBRAL_LIBRE} %`]);
+  return filas;
+}
+
+function generarReporte(equipoId, entrada, estado, hallazgos, oportunidades, recs, ficha, fecha){
+  const L = ["=".repeat(60), "REPORTE DE DIAGNÓSTICO - CASO 13 (datos simulados/ingresados)",
+             `Equipo: ${equipoId}     Fecha: ${fecha}`, "=".repeat(60)];
+  if (ficha) L.push("[Configuración actual - ficha F01]",
+    ` CPU: ${ficha.cpu_modelo} | RAM: ${ficha.ram_gb} GB ${ficha.tipo_ram} (máx. ${ficha.ram_max_gb} GB, ${ficha.ranuras_libres} ranura(s) libre(s))`,
+    ` Disco: ${ficha.disco} (${ficha.interfaz})`);
+  L.push("[Métricas ingresadas]",
+    ` CPU ${g(entrada.cpu)} % (${g(entrada.minutos)} min) | RAM ${g(entrada.ram)} % | Disco ${entrada.disco} | Libre ${g(entrada.libre)} %`,
+    `[Estado] ${estado}`, "[Hallazgos]");
+  hallazgos.forEach(h => L.push(` - ${h}`));
+  oportunidades.forEach(o => L.push(` - ${o}`));
+  L.push("[Configuración actual -> mejora propuesta]");
+  tablaMejoras(entrada.ram, entrada.disco, entrada.libre, ficha).forEach(([c, a, p]) => L.push(` ${c.padEnd(14)}${a.padEnd(22)}-> ${p}`));
+  L.push("[Recomendaciones]");
+  recs.forEach(r => L.push(` - ${r}`));
+  L.push("[Nota] Reglas preliminares del proyecto; no sustituyen un diagnóstico técnico con cargas de trabajo representativas. Las recomendaciones de RAM y SSD son preliminares: no se han comprobado físicamente en el equipo.", "=".repeat(60));
+  return L.join("\n");
+}
+
+/* Valida las cuatro métricas y devuelve {entrada} o {errores}. Equivale a pedir() sin repetir la pregunta. */
+function validarEntrada(txt, ficha){
+  const errores = [], e = {};
+  const tryv = (campo, fn) => { try { e[campo] = fn(); } catch (x) { errores.push(x.message); } };
+  tryv("cpu", () => validarPorcentaje(txt.cpu, "CPU"));
+  tryv("minutos", () => validarMinutos(txt.min));
+  tryv("ram", () => validarPorcentaje(txt.ram, "RAM"));
+  if (ficha) e.disco = ficha.disco; else tryv("disco", () => validarOpcion(txt.disco, "Disco", ["HDD", "SSD"]));
+  tryv("libre", () => validarPorcentaje(txt.libre, "Espacio libre"));
+  return errores.length ? {errores} : {entrada: e};
+}
+function diagnosticar(entrada, ficha, equipoId, fecha){
+  const ev = evaluar(entrada.cpu, entrada.minutos, entrada.ram, entrada.disco, entrada.libre);
+  const recs = recomendar(entrada.cpu, entrada.minutos, entrada.ram, entrada.disco, entrada.libre, ficha);
+  const reporte = generarReporte(equipoId, entrada, ev.estado, ev.hallazgos, ev.oportunidades, recs, ficha, fecha);
+  return {...ev, recs, reporte};
+}
+</script>
+
+<script>
+/* ---------- Interfaz: animación de la ejecución sobre la arquitectura ---------- */
+const $ = id => document.getElementById(id);
+const NODOS = ["nE1","nE2","nCPU","nUC","nALU","nREG","nRAM","nBUS","nS1","nS2"];
+const STUBS = ["sE1","sE2","sCPU","sRAM","sS1","sS2"];
+const ESCENARIOS = [
+  {n:"Normal", eq:"", cpu:"50", min:"0", ram:"30", libre:"40", disco:"SSD"},
+  {n:"Advertencia", eq:"", cpu:"40", min:"0", ram:"20", libre:"10", disco:"SSD"},
+  {n:"Crítico (PC-01)", eq:"PC-01", cpu:"90", min:"15", ram:"95", libre:"40", disco:"HDD"},
+  {n:"Crítico (RAM 90 %)", eq:"", cpu:"58", min:"0", ram:"90", libre:"40", disco:"SSD"},
+  {n:"Pico de CPU", eq:"", cpu:"90", min:"5", ram:"40", libre:"40", disco:"SSD"},
+  {n:"Límite RAM = 80", eq:"", cpu:"50", min:"0", ram:"80", libre:"40", disco:"SSD"},
+  {n:"HDD sin alertas", eq:"", cpu:"50", min:"0", ram:"30", libre:"40", disco:"HDD"},
+  {n:"Entradas inválidas", eq:"", cpu:"abc", min:"-3", ram:"120", libre:"-5", disco:"SSD"}
+];
+let pasos = [], idx = -1, timer = null, ultimo = null;
+
+function fichaActual(){ const v = $("equipo").value; return v ? EQUIPOS_REFERENCIA[v].ficha : null; }
+function sincronizarFicha(){
+  const f = fichaActual();
+  $("disco").disabled = !!f;
+  if (f) { $("disco").value = f.disco; $("fichaNota").textContent = `Ficha: ${f.cpu_modelo} · ${f.ram_gb} GB ${f.tipo_ram} (máx. ${f.ram_max_gb} GB, ${f.ranuras_libres} ranura(s) libre(s)) · ${f.disco} ${f.interfaz}. Datos de la Tabla 2 y supuestos del prototipo.`; }
+  else $("fichaNota").textContent = "Sin ficha: la compatibilidad queda sujeta a validación técnica.";
+  $("bRef").disabled = !f;
+}
+function leerTextos(){ return {cpu: $("cpu").value, min: $("min").value, ram: $("ram").value, libre: $("libre").value, disco: $("disco").value}; }
+function fechaTxt(){ const d = new Date(), p = n => String(n).padStart(2, "0"); return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+
+function bin8(x){ return (x & 255).toString(2).padStart(8, "0"); }
+function hex8(x){ return "0x" + (x & 255).toString(16).toUpperCase().padStart(2, "0"); }
+function cmp8(a, b){ const r = (a - b) & 255; return {r, CF: a < b ? 1 : 0, ZF: r === 0 ? 1 : 0, SF: (r >> 7) & 1, OF: (((a ^ b) & (a ^ r)) & 128) ? 1 : 0}; }
+function esEntero8(x){ return Number.isInteger(x) && x >= 0 && x <= 255; }
+
+function construirPasos(txt){
+  const ficha = fichaActual(), id = $("equipo").value || "SIN-FICHA";
+  const val = validarEntrada(txt, ficha);
+  const base = {AL:"—", BL:"—", CL:"—", DL:"—", flags:null, ip:0};
+  const mem = {};
+  const P = [];
+  const add = (p) => P.push({nodos:[], stubs:[], bus:"", ir:"—", alu:"—", aluDet:"", regla:null, ...p});
+
+  add({titulo:"1 · Entrada (E1 y E2)", texto: ficha ? `E1 entrega las métricas escritas en el formulario y E2 la ficha F01 de ${id} (disco ${ficha.disco}, interfaz ${ficha.interfaz}).` : "E1 entrega las métricas escritas en el formulario. No hay ficha F01 (E2): la compatibilidad queda sujeta a validación.",
+       nodos:["nE1"].concat(ficha ? ["nE2"] : []), stubs:["sE1"].concat(ficha ? ["sE2"] : []), bus:"E/S → bus → CPU", regs:{}});
+  if (val.errores) {
+    add({titulo:"2 · Validación: entrada rechazada", texto:`La CPU compara cada dato con su rango antes de cargarlo en memoria. Se rechazaron ${val.errores.length} dato(s); no se carga nada en RAM y la ALU no opera con valores erróneos.`,
+         nodos:["nCPU","nUC","nALU"], bus:"—", ir:"CMP dato, rango", alu:"fuera de rango", rechazo:val.errores});
+    add({titulo:"3 · Salida de error (S1)", texto:"La consola informa cada entrada inválida con [ENTRADA INVÁLIDA]; en el programa de consola se repite la pregunta hasta recibir un dato válido.",
+         nodos:["nS1","nBUS"], stubs:["sS1"], bus:"CPU → bus → S1", salida:"errores", rechazo:val.errores});
+    return {pasos:P, ficha, id, rechazo:true};
+  }
+  const e = val.entrada, res = diagnosticar(e, ficha, id, fechaTxt());
+  const A = {cpu:0x1000, minutos:0x1002, ram:0x1004, disco:0x1006, libre:0x1008, estado:0x100A};
+  const regs = {AL:e.cpu, BL:e.ram, CL:e.libre, DL:e.minutos};
+  add({titulo:"2 · Validación", texto:"La CPU comprueba rangos (0–100 %), minutos finitos y no negativos y el tipo de disco. Los cuatro datos son válidos y pasan a la memoria.",
+       nodos:["nCPU","nUC","nALU"], bus:"CMP dato, 0 · CMP dato, 100", ir:"CMP dato, 100", alu:"dentro de rango", memAdd:{}});
+  add({titulo:"3 · Escritura en memoria (WRITE)", texto:"La CPU coloca dirección y dato en el bus y activa WRITE: los valores y los umbrales quedan como variables en la RAM mientras dura la ejecución. Nada se conserva al cerrar, salvo fichas y reportes exportados.",
+       nodos:["nCPU","nBUS","nRAM"], stubs:["sCPU","sRAM"], bus:`DIR 0x1000.. + WRITE → CPU ${g(e.cpu)}, RAM ${g(e.ram)}…`, ir:"MOV [0x1000], dato", memAdd:{cpu:e.cpu, minutos:e.minutos, ram:e.ram, disco:e.disco, libre:e.libre}});
+  const alu = (titulo, texto, ir, A_, B_, etq, reglaTxt, regsExtra, memHl) => {
+    const ent = esEntero8(A_) && esEntero8(B_);
+    const f = ent ? cmp8(A_, B_) : null;
+    add({titulo, texto, nodos:["nUC","nALU","nREG","nBUS","nRAM"], stubs:["sCPU","sRAM"], bus:`READ ← ${etq}`, ir, alu: f ? `${A_}−${B_}=${A_-B_}` : "coma flotante", regs:regsExtra,
+         aluDet: ent ? `${ir}\nA = ${A_} (${bin8(A_)} · ${hex8(A_)})\nB = ${B_} (${bin8(B_)} · ${hex8(B_)})\nA − B = ${bin8(f.r)} (${hex8(f.r)})${A_ < B_ ? "  → resultado negativo en complemento a dos" : ""}` : `${ir}\nA = ${g(A_)} · B = ${B_}\nDato decimal o fuera de 8 bits: se compara como número de coma flotante; no se muestran banderas de 8 bits.`,
+         flags: f, regla: reglaTxt, memHl});
+  };
+  const R = res.reglas;
+  alu("4 · ALU: ¿CPU > 85 %?", `La UC lee USO_CPU de la RAM (READ), lo carga en AL y la ALU ejecuta CMP AL, ${UMBRAL_CPU}. Resultado: CPU ${g(e.cpu)} ${e.cpu > UMBRAL_CPU ? ">" : "≤"} ${UMBRAL_CPU}.`, `CMP AL, ${UMBRAL_CPU}`, e.cpu, UMBRAL_CPU, `USO_CPU = ${g(e.cpu)}`, `CPU > 85: ${e.cpu > UMBRAL_CPU ? "sí" : "no"}`, {AL:e.cpu}, ["cpu"]);
+  alu("5 · ALU: ¿minutos ≥ 10?", `Solo si el uso de CPU supera el umbral importa la duración: CMP DL, ${MIN_CPU_SOSTENIDO}. ${e.minutos} min ${e.minutos >= MIN_CPU_SOSTENIDO ? "≥" : "<"} ${MIN_CPU_SOSTENIDO}. Con CPU alta, ${e.cpu > UMBRAL_CPU ? (e.minutos >= MIN_CPU_SOSTENIDO ? "se cumple R1 (sostenida)" : "se cumple R4 (posible pico)") : "no aplica R1 ni R4"}.`, `CMP DL, ${MIN_CPU_SOSTENIDO}`, e.minutos, MIN_CPU_SOSTENIDO, `MINUTOS = ${g(e.minutos)}`, `minutos ≥ 10: ${e.minutos >= MIN_CPU_SOSTENIDO ? "sí" : "no"}`, {DL:e.minutos}, ["minutos"]);
+  alu("6 · ALU: ¿RAM > 80 %?", `CMP BL, ${UMBRAL_RAM}. RAM ${g(e.ram)} ${e.ram > UMBRAL_RAM ? ">" : "≤"} ${UMBRAL_RAM}: ${R.R2 ? "se cumple R2 (posible presión de memoria)" : "R2 no se cumple"}.`, `CMP BL, ${UMBRAL_RAM}`, e.ram, UMBRAL_RAM, `USO_RAM = ${g(e.ram)}`, `RAM > 80: ${R.R2 ? "sí" : "no"}`, {BL:e.ram}, ["ram"]);
+  alu("7 · ALU: ¿espacio libre < 15 %?", `CMP CL, ${UMBRAL_LIBRE}. Libre ${g(e.libre)} ${e.libre < UMBRAL_LIBRE ? "<" : "≥"} ${UMBRAL_LIBRE}: ${R.R3 ? "se cumple R3" : "R3 no se cumple"}.`, `CMP CL, ${UMBRAL_LIBRE}`, e.libre, UMBRAL_LIBRE, `LIBRE = ${g(e.libre)}`, `libre < 15: ${R.R3 ? "sí" : "no"}`, {CL:e.libre}, ["libre"]);
+  add({titulo:"8 · Unidad de control: combina las reglas", texto:`La UC enlaza los resultados con operaciones lógicas y saltos condicionales: CRÍTICO = R1 OR R2 = ${+R.R1} OR ${+R.R2} = ${+(R.R1||R.R2)}. ${res.estado === "CRÍTICO" ? "Basta una regla crítica." : `ADVERTENCIA = R3 OR R4 = ${+R.R3} OR ${+R.R4} = ${+(R.R3||R.R4)} (solo si no es crítico).`} Estado resultante: ${res.estado}.`,
+       nodos:["nUC","nALU","nREG"], ir:"OR R1, R2", alu:`R1∨R2=${+(R.R1||R.R2)}`, aluDet:`CRÍTICO = R1 OR R2 = ${+R.R1} OR ${+R.R2} = ${+(R.R1||R.R2)}\nADVERTENCIA = ¬CRÍTICO AND (R3 OR R4) = ${+(!(R.R1||R.R2) && (R.R3||R.R4))}\nHDD: ${e.disco === "HDD" ? "solo agrega oportunidad de mejora" : "sin oportunidad de mejora"}`, regla:"decision", estadoFinal:res.estado});
+  add({titulo:"9 · Escritura del resultado en memoria", texto:`La CPU escribe ESTADO = ${res.estado} en la RAM (WRITE por el bus de datos) y prepara hallazgos, tabla «configuración actual → mejora propuesta» y recomendaciones.`,
+       nodos:["nCPU","nBUS","nRAM"], stubs:["sCPU","sRAM"], bus:`DIR 0x100A + WRITE → ${res.estado}`, ir:"MOV [0x100A], estado", memAdd:{estado:res.estado}, estadoFinal:res.estado});
+  add({titulo:"10 · Salida (S1 y S2)", texto:"La consola (S1) muestra el reporte: estado, hallazgos, tabla de mejora y recomendaciones preliminares. S2 permite guardar el mismo reporte como archivo .txt (F05).",
+       nodos:["nS1","nS2","nBUS"], stubs:["sS1","sS2"], bus:"CPU → bus → S1 y S2", ir:"OUT consola", salida:"reporte", estadoFinal:res.estado, reporte:res.reporte});
+  return {pasos:P, ficha, id, res, entrada:e, A};
+}
+
+function dibujarMemoria(memo, hl){
+  const filas = [["USO_CPU","cpu","0x1000"],["MINUTOS","minutos","0x1002"],["USO_RAM","ram","0x1004"],["DISCO","disco","0x1006"],["LIBRE","libre","0x1008"],["ESTADO","estado","0x100A"]];
+  let h = filas.map(([n,k,a]) => `<tr class="${hl && hl.includes(k) ? "hl" : ""}"><td class="m">${n}</td><td class="m">${a}</td><td class="m">${memo[k] === undefined ? "—" : (typeof memo[k] === "number" ? g(memo[k]) : memo[k])}</td></tr>`).join("");
+  h += `<tr><td class="m">UMBRAL_CPU</td><td class="m">0x2000</td><td class="m">${UMBRAL_CPU}</td></tr><tr><td class="m">UMBRAL_RAM</td><td class="m">0x2002</td><td class="m">${UMBRAL_RAM}</td></tr><tr><td class="m">UMBRAL_LIBRE</td><td class="m">0x2004</td><td class="m">${UMBRAL_LIBRE}</td></tr><tr><td class="m">MIN_SOSTENIDO</td><td class="m">0x2006</td><td class="m">${MIN_CPU_SOSTENIDO}</td></tr>`;
+  $("tMem").innerHTML = h;
+  const ramTxt = $("ramTxt"); ramTxt.textContent = "";
+  const lines = ["cpu","ram","libre","estado"].map(k => memo[k] === undefined ? null : `${k.toUpperCase()}=${typeof memo[k] === "number" ? g(memo[k]) : memo[k]}`).filter(Boolean);
+  ramTxt.innerHTML = lines.map((t, i) => `<tspan x="624" dy="${i ? 16 : 0}">${t}</tspan>`).join("");
+}
+function dibujarReglas(R, estado, mostrar){
+  const f = [["R1","CPU > 85 % y ≥ 10 min"],["R2","RAM > 80 %"],["R3","libre < 15 %"],["R4","CPU > 85 % y < 10 min"]];
+  $("tReglas").innerHTML = f.map(([k,t]) => `<tr><td class="m">${k}</td><td>${t}</td><td class="m">${mostrar && R ? (R[k] ? "1 (sí)" : "0 (no)") : "—"}</td></tr>`).join("");
+  const el = $("estado"); el.className = "est " + (mostrar && estado ? estado : ""); el.textContent = mostrar && estado ? estado : "—";
+  $("estNota").textContent = mostrar && estado ? ({NORMAL:"Ninguna regla se cumple.", ADVERTENCIA:"Sin condición crítica; se cumple R3 o R4.", "CRÍTICO":"Se cumple R1 o R2: señal preliminar prioritaria, no prueba de falla física.", RECHAZADO:"Entrada inválida: no se evaluó."}[estado] || "") : "";
+}
+function pintar(ctx, i){
+  const p = ctx.pasos[i];
+  NODOS.forEach(n => $(n).classList.toggle("on", p.nodos.includes(n)));
+  STUBS.forEach(n => $(n).classList.toggle("on", p.stubs.includes(n)));
+  $("busEtq").textContent = p.bus || "";
+  $("irTxt").textContent = "IR: " + p.ir;
+  $("aluTxt").textContent = p.alu;
+  // registros acumulados hasta el paso i
+  const r = {AL:"—", BL:"—", CL:"—", DL:"—"}; let fl = null, memo = {}, hl = null, estado = null, regla = null, R = null;
+  for (let k = 0; k <= i; k++) { const q = ctx.pasos[k]; if (q.regs) Object.assign(r, Object.fromEntries(Object.entries(q.regs).map(([a,b]) => [a, g(b)]))); if (q.flags) fl = q.flags; if (q.memAdd) Object.assign(memo, q.memAdd); if (q.estadoFinal) estado = q.estadoFinal; if (q.regla === "decision") R = ctx.res.reglas; }
+  const decVista = i >= 7 && ctx.res;
+  $("regTxt1").textContent = `AL=${r.AL} BL=${r.BL} CL=${r.CL} DL=${r.DL}`;
+  $("regTxt2").textContent = fl ? `FLAGS CF=${fl.CF} ZF=${fl.ZF} SF=${fl.SF} OF=${fl.OF}` : "FLAGS CF=— ZF=— SF=— OF=—";
+  $("regTxt3").textContent = `IP=${i + 1}`;
+  $("progreso").textContent = `Paso ${i + 1} de ${ctx.pasos.length}`;
+  $("pasoTxt").innerHTML = `<b>${p.titulo}</b>${p.texto}`;
+  $("aluDet").textContent = p.aluDet || "Sin operación de la ALU en este paso.";
+  $("flags").innerHTML = p.flags ? ["CF","ZF","SF","OF"].map(k => `<span class="${p.flags[k] ? "uno" : ""}">${k}=${p.flags[k]}</span>`).join("") : "";
+  dibujarMemoria(memo, p.memHl || null);
+  if (ctx.rechazo) dibujarReglas(null, i >= 1 ? "RECHAZADO" : null, i >= 1);
+  else dibujarReglas(ctx.res.reglas, estado || (decVista ? ctx.res.estado : null), i >= 7);
+  if (p.salida === "reporte") { $("consola").textContent = p.reporte; ultimo = {texto:p.reporte, id:ctx.id}; $("bDescargar").disabled = false; $("bCopiar").disabled = false; }
+  else if (p.salida === "errores") { $("consola").textContent = p.rechazo.map(m => " [ENTRADA INVÁLIDA] " + m).join("\n"); ultimo = null; $("bDescargar").disabled = true; $("bCopiar").disabled = true; }
+  else if (!p.salida) { $("consola").textContent = i === 0 ? "(esperando salida…)" : $("consola").textContent; }
+}
+function reiniciar(){
+  clearInterval(timer); timer = null; idx = -1; pasos = []; ultimo = null;
+  NODOS.forEach(n => $(n).classList.remove("on")); STUBS.forEach(n => $(n).classList.remove("on"));
+  $("busEtq").textContent = ""; $("irTxt").textContent = "IR: —"; $("aluTxt").textContent = "—";
+  $("regTxt1").textContent = "AL=— BL=— CL=— DL=—"; $("regTxt2").textContent = "FLAGS CF=— ZF=— SF=— OF=—"; $("regTxt3").textContent = "IP=0";
+  $("progreso").textContent = "Paso 0 de 0"; $("pasoTxt").innerHTML = "<b>Listo</b>Elija un escenario y pulse «Ejecutar paso a paso».";
+  $("aluDet").textContent = "Sin operación todavía."; $("flags").innerHTML = ""; $("consola").textContent = "(sin ejecución)"; $("bDescargar").disabled = true; $("bCopiar").disabled = true; $("copiaMsg").textContent = "";
+  dibujarMemoria({}, null); dibujarReglas(null, null, false);
+}
+function iniciar(){ reiniciar(); const c = construirPasos(leerTextos()); window.__ctx = c; pasos = c.pasos; idx = 0; pintar(c, 0); return c; }
+function siguiente(){ if (idx < 0) { iniciar(); return; } if (idx < pasos.length - 1) { idx++; pintar(window.__ctx, idx); } else clearInterval(timer); }
+function ejecutarAnimado(){ iniciar(); clearInterval(timer); timer = setInterval(() => { if (idx >= pasos.length - 1) clearInterval(timer); else siguiente(); }, 1400); }
+function directo(){ const c = iniciar(); clearInterval(timer); idx = c.pasos.length - 1; pintar(c, idx); }
+function descargar(){ if (!ultimo) return; const d = new Date(), p = n => String(n).padStart(2, "0");
+  const sello = `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+  const ident = ultimo.id.replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "equipo";
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([ultimo.texto], {type:"text/plain;charset=utf-8"})); a.download = `reporte_${ident}_${sello}.txt`; a.click(); URL.revokeObjectURL(a.href); }
+function aplicar(s){ $("equipo").value = s.eq; sincronizarFicha(); $("cpu").value = s.cpu; $("min").value = s.min; $("ram").value = s.ram; $("libre").value = s.libre; if (!s.eq) $("disco").value = s.disco; directo(); }
+
+ESCENARIOS.forEach(s => { const b = document.createElement("button"); b.textContent = s.n; b.addEventListener("click", () => aplicar(s)); $("chips").appendChild(b); });
+$("equipo").addEventListener("change", () => { sincronizarFicha(); reiniciar(); });
+$("bEjecutar").addEventListener("click", ejecutarAnimado);
+$("bSiguiente").addEventListener("click", siguiente);
+$("bDirecto").addEventListener("click", directo);
+$("bDescargar").addEventListener("click", descargar);
+$("bReiniciar").addEventListener("click", reiniciar);
+$("bCopiar").addEventListener("click", async () => { if (!ultimo) return; try { await navigator.clipboard.writeText(ultimo.texto); $("copiaMsg").textContent = " Reporte copiado."; } catch (e) { $("copiaMsg").textContent = " No se pudo copiar; seleccione el texto de la consola."; } });
+$("bRef").addEventListener("click", () => { const k = $("equipo").value; if (!k) return; const m = EQUIPOS_REFERENCIA[k].metricas; $("cpu").value = m.cpu; $("min").value = m.minutos; $("ram").value = m.ram; $("libre").value = m.libre; reiniciar(); });
+sincronizarFicha(); reiniciar();
+</script>
+</body>
+</html>
