@@ -1,4 +1,5 @@
-# Ejecuta la matriz de pruebas del prototipo (casos T01-T11) y compara con el resultado esperado.
+# Ejecuta la matriz de pruebas del prototipo (casos T01-T19 y verificaciones de integración)
+# y compara cada resultado obtenido con el esperado.
 import json
 import tempfile
 from pathlib import Path
@@ -90,6 +91,45 @@ ok = "APROBADO" if rech17 == 3 else "FALLÓ"
 print(f"T17 | Minutos no finitos o negativos        | rechazadas {rech17}/3 | {ok}")
 res.append({"id": "T17", "desc": "Minutos no finitos o negativos", "entrada": "minutos «nan», «inf» y −3",
             "esperado": "Rechazar las 3 entradas", "obtenido": f"Rechazadas {rech17}/3", "estado": ok})
+# T18: datos contradictorios entre la ficha registrada (DDR4) y lo observado en el diagnóstico (DDR3)
+f18 = ficha_base(tipo_ram="DDR4", ram_max_gb=16)
+avisos18 = d.verificar_consistencia(f18, {"tipo_ram": "DDR3", "ram_gb": "", "disco": "HDD", "interfaz": ""})
+sin_aviso = d.verificar_consistencia(f18, {"tipo_ram": "ddr4", "disco": "HDD"})  # control: datos coincidentes
+est18, h18, o18 = d.evaluar(50, 0, 90, "HDD", 40)
+rep18 = d.generar_reporte("PC-X", {"cpu": 50, "minutos": 0, "ram": 90, "disco": "HDD", "libre": 40},
+                          est18, h18, o18, d.recomendar(50, 0, 90, "HDD", 40, f18), f18, avisos18)
+ok = ("APROBADO" if len(avisos18) == 1 and "Tipo de RAM" in avisos18[0] and "validación técnica" in avisos18[0]
+      and not sin_aviso and "[Validación de la ficha F01]" in rep18 else "FALLÓ")
+print(f"T18 | Ficha DDR4 vs. DDR3 observado         | avisos {len(avisos18)} (control: {len(sin_aviso)}) | {ok}")
+res.append({"id": "T18", "desc": "Datos contradictorios ficha / diagnóstico",
+            "entrada": "Ficha DDR4; se observa DDR3 (control: DDR4 coincide)",
+            "esperado": "Aviso de inconsistencia y validación técnica",
+            "obtenido": f"{len(avisos18)} aviso de inconsistencia; control sin aviso; aviso incluido en el reporte",
+            "estado": ok})
+# T19: equipo registrado con HDD y actualizado luego a SSD; se vuelve a evaluar con la ficha nueva
+with tempfile.TemporaryDirectory() as tmp19:
+    ruta19 = Path(tmp19) / "fichas_equipos.json"
+    d.guardar_ficha(ficha_base(id="PC-19"), ruta19)
+    _, _, opo_antes = d.evaluar(50, 0, 30, d.cargar_fichas(ruta19)["PC-19"]["disco"], 40)
+    nueva = d.actualizar_ficha("pc-19", {"disco": "SSD"}, ruta19)
+    guardada = d.cargar_fichas(ruta19)["PC-19"]
+    _, _, opo_despues = d.evaluar(50, 0, 30, guardada["disco"], 40)
+    fila_disco = d.tabla_mejoras(30, guardada["disco"], 40, guardada)[1]
+    try:
+        d.actualizar_ficha("PC-19", {"ram_gb": "32"}, ruta19)  # supera el máximo de la placa (8 GB)
+        rechazo19 = False
+    except ValueError as e:
+        rechazo19 = True; print(" rechazado:", e)
+ok = ("APROBADO" if opo_antes and not opo_despues and guardada["disco"] == "SSD"
+      and len(guardada["historial"]) == 1 and guardada["historial"][0]["antes"] == "HDD"
+      and fila_disco[2] == "sin cambio" and rechazo19 and nueva == guardada else "FALLÓ")
+print(f"T19 | Ficha actualizada de HDD a SSD        | oportunidad SSD antes: {bool(opo_antes)}, "
+      f"después: {bool(opo_despues)} | {ok}")
+res.append({"id": "T19", "desc": "Cambio de hardware después del registro",
+            "entrada": "Ficha con HDD; se actualiza a SSD y se vuelve a evaluar (además, RAM 32 GB > máx. 8 GB)",
+            "esperado": "Ficha actualizada con historial y nueva evaluación sin oportunidad SSD",
+            "obtenido": "Ficha SSD con 1 cambio en el historial; sin oportunidad SSD; cambio inválido rechazado",
+            "estado": ok})
 
 
 # Integración con el programa principal: F01 (guardar/leer ficha) y F05 (exportar reporte)

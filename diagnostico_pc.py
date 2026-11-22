@@ -167,6 +167,92 @@ def cargar_referencias(ruta=ARCHIVO_FICHAS):
     print(f" Equipos de referencia cargados ({', '.join(EQUIPOS_REFERENCIA)}) en: {ruta}")
 
 
+# ---------- F01/F04: consistencia de la ficha y actualización tras un cambio de hardware ----------
+CAMPOS_VERIFICABLES = {"tipo_ram": "Tipo de RAM", "ram_gb": "RAM instalada (GB)",
+                       "disco": "Tipo de disco", "interfaz": "Interfaz de almacenamiento"}
+
+
+def verificar_consistencia(ficha, observado):
+    """Compara la ficha F01 con los datos observados en el equipo durante el diagnóstico.
+    Devuelve una lista de avisos; vacía si no hay contradicciones. No cambia el estado del diagnóstico."""
+    avisos = []
+    if not ficha:
+        return avisos
+    for campo, nombre in CAMPOS_VERIFICABLES.items():
+        valor = observado.get(campo)
+        if valor in (None, "") or campo not in ficha:
+            continue
+        if str(valor).strip().upper() != str(ficha[campo]).strip().upper():
+            avisos.append(f"[INCONSISTENCIA] {nombre}: la ficha registra {ficha[campo]}, pero se observó {valor}. "
+                          "Requiere validación técnica; las recomendaciones de este componente no deben "
+                          "aplicarse hasta confirmar el dato y actualizar la ficha (opción 5).")
+    return avisos
+
+
+def _validar_cambio(campo, valor, ficha):
+    """Valida un cambio de la ficha con las mismas reglas del registro F01."""
+    if campo == "tipo_ram":
+        return validar_opcion(valor, "Tipo de RAM", TIPOS_RAM)
+    if campo == "disco":
+        return validar_opcion(valor, "Disco", ("HDD", "SSD"))
+    if campo == "interfaz":
+        return validar_opcion(valor, "Interfaz", INTERFACES)
+    if campo == "ram_gb":
+        nuevo = validar_entero(valor, "RAM instalada", 1)
+        if nuevo > ficha["ram_max_gb"]:
+            raise ValueError(f"RAM instalada: {nuevo} GB supera el máximo de la placa ({ficha['ram_max_gb']} GB).")
+        return nuevo
+    if campo == "ranuras_libres":
+        return validar_entero(valor, "Ranuras libres", 0)
+    if campo == "cpu_modelo":
+        return validar_texto(valor, "Modelo de CPU")
+    if campo == "ram_max_gb":
+        return validar_ram_maxima(valor, ficha["ram_gb"])
+    raise ValueError(f"Campo '{campo}' no se puede actualizar.")
+
+
+def actualizar_ficha(equipo_id, cambios, ruta=ARCHIVO_FICHAS):
+    """Actualiza la ficha F01 de un equipo ya registrado (por ejemplo, HDD -> SSD) y guarda un historial.
+    Devuelve la ficha actualizada. Lanza ValueError si el equipo no existe o un dato no es válido."""
+    fichas = cargar_fichas(ruta)
+    equipo_id = str(equipo_id).strip().upper()
+    if equipo_id not in fichas:
+        raise ValueError(f"No existe ficha F01 para {equipo_id}; regístrelo primero (opción 1).")
+    ficha = dict(fichas[equipo_id])
+    validados = {campo: _validar_cambio(campo, valor, ficha) for campo, valor in cambios.items()}
+    historial = list(ficha.get("historial", []))
+    fecha = f"{datetime.now():%d/%m/%Y %H:%M}"
+    for campo, nuevo in validados.items():
+        if ficha.get(campo) != nuevo:
+            historial.append({"fecha": fecha, "campo": campo, "antes": ficha.get(campo), "despues": nuevo})
+            ficha[campo] = nuevo
+    ficha["historial"] = historial
+    guardar_ficha(ficha, ruta)
+    return ficha
+
+
+def actualizar_equipo(ruta=ARCHIVO_FICHAS):
+    print("\n--- F01: ACTUALIZAR FICHA (cambio de hardware) ---")
+    equipo_id = pedir("ID del equipo: ", validar_texto, "ID").upper()
+    ficha = cargar_fichas(ruta).get(equipo_id)
+    if not ficha:
+        print(f" [AVISO] No existe ficha F01 para {equipo_id}; regístrelo primero (opción 1).")
+        return None
+    print(" Deje el campo vacío (Enter) para conservar el valor actual.")
+    cambios = {}
+    for campo, nombre in CAMPOS_VERIFICABLES.items():
+        texto = input(f" {nombre} [{ficha[campo]}]: ").strip()
+        if texto:
+            cambios[campo] = texto
+    try:
+        ficha = actualizar_ficha(equipo_id, cambios, ruta)
+    except ValueError as error:
+        print(" [ENTRADA INVÁLIDA]", error, "- no se guardaron cambios.")
+        return None
+    print(f" Ficha de {equipo_id} actualizada en: {ruta}. Vuelva a evaluar el equipo (opción 2).")
+    return ficha
+
+
 # ---------- F02 y F03: evaluación de métricas e identificación de señales de limitación ----------
 def evaluar(cpu, minutos_cpu, ram, disco, libre):
     """Aplica la jerarquía de decisión. Devuelve (estado, hallazgos, oportunidades)."""
@@ -280,7 +366,8 @@ def tabla_mejoras(ram, disco, libre, ficha=None):
 
 
 # ---------- F05: reporte consolidado y exportación ----------
-def generar_reporte(equipo_id, entrada, estado, hallazgos, oportunidades, recomendaciones, ficha=None):
+def generar_reporte(equipo_id, entrada, estado, hallazgos, oportunidades, recomendaciones, ficha=None,
+                    avisos=None):
     lineas = ["=" * 60, "REPORTE DE DIAGNÓSTICO - CASO 13 (datos simulados/ingresados)",
               f"Equipo: {equipo_id}     Fecha: {datetime.now():%d/%m/%Y %H:%M}", "=" * 60]
     if ficha:
@@ -288,6 +375,8 @@ def generar_reporte(equipo_id, entrada, estado, hallazgos, oportunidades, recome
                    f" CPU: {ficha['cpu_modelo']} | RAM: {ficha['ram_gb']} GB {ficha['tipo_ram']} "
                    f"(máx. {ficha['ram_max_gb']} GB, {ficha['ranuras_libres']} ranura(s) libre(s))",
                    f" Disco: {ficha['disco']} ({ficha['interfaz']})"]
+    if avisos:
+        lineas += ["[Validación de la ficha F01]"] + [f" - {a}" for a in avisos]
     lineas += ["[Métricas ingresadas]",
                f" CPU {entrada['cpu']:g} % ({entrada['minutos']:g} min) | RAM {entrada['ram']:g} % | "
                f"Disco {entrada['disco']} | Libre {entrada['libre']:g} %",
@@ -342,11 +431,21 @@ def diagnosticar_equipo(ruta=ARCHIVO_FICHAS):
              "disco": ficha["disco"] if ficha else pedir("Tipo de disco (HDD/SSD): ", validar_opcion, "Disco", ("HDD", "SSD")),
              "libre": pedir("Espacio libre (%): ", validar_porcentaje, "Espacio libre"),
          }
+    avisos = []
+    if ficha and input(" ¿Confirmar la ficha con lo observado en el equipo? (S/N): ").strip().upper() == "S":
+        print(" Deje el campo vacío (Enter) si coincide con la ficha.")
+        observado = {campo: input(f" {nombre} observado [{ficha[campo]}]: ").strip()
+                     for campo, nombre in CAMPOS_VERIFICABLES.items()}
+        avisos = verificar_consistencia(ficha, observado)
+        for aviso in avisos:
+            print(" " + aviso)
     estado, hallazgos, oportunidades = evaluar(entrada["cpu"], entrada["minutos"], entrada["ram"],
                                                 entrada["disco"], entrada["libre"])
     recs = recomendar(entrada["cpu"], entrada["minutos"], entrada["ram"], entrada["disco"],
                        entrada["libre"], ficha)
-    reporte = generar_reporte(equipo_id, entrada, estado, hallazgos, oportunidades, recs, ficha)
+    if avisos:
+        recs.insert(0, "Validar la ficha F01 antes de aplicar las recomendaciones: hay datos contradictorios.")
+    reporte = generar_reporte(equipo_id, entrada, estado, hallazgos, oportunidades, recs, ficha, avisos)
     print("\n" + reporte)
     if input("\n¿Exportar reporte a archivo local? (S/N): ").strip().upper() == "S":
          print(" Reporte guardado en:", exportar_reporte(reporte, equipo_id))
@@ -357,7 +456,8 @@ def menu():
     while True:
         print("\n=== DIAGNÓSTICO DE VIDA ÚTIL DE PC ===\n1. Registrar equipo (F01)\n"
               "2. Evaluar equipo (F02-F05)\n3. Ver fichas registradas\n"
-              "4. Cargar equipos de referencia (PC-01 a PC-03)\n5. Salir")
+              "4. Cargar equipos de referencia (PC-01 a PC-03)\n5. Actualizar ficha (cambio de hardware)\n"
+              "6. Salir")
         opcion = input("Opción: ").strip()
         if opcion == "1":
             registrar_equipo()
@@ -365,13 +465,17 @@ def menu():
             diagnosticar_equipo()
         elif opcion == "3":
             for id_equipo, f in cargar_fichas().items():
-                print(f" {id_equipo}: {f['cpu_modelo']} | {f['ram_gb']} GB {f['tipo_ram']} | {f['disco']} {f['interfaz']}")
+                cambios = f" | {len(f['historial'])} cambio(s) registrado(s)" if f.get("historial") else ""
+                print(f" {id_equipo}: {f['cpu_modelo']} | {f['ram_gb']} GB {f['tipo_ram']} | "
+                      f"{f['disco']} {f['interfaz']}{cambios}")
         elif opcion == "4":
             cargar_referencias()
         elif opcion == "5":
+            actualizar_equipo()
+        elif opcion == "6":
             break
         else:
-            print(" [ENTRADA INVÁLIDA] Elija 1, 2, 3, 4 o 5.")
+            print(" [ENTRADA INVÁLIDA] Elija 1, 2, 3, 4, 5 o 6.")
 
 
 if __name__ == "__main__":

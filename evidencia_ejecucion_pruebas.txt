@@ -1,0 +1,235 @@
+EVIDENCIA DE EJECUCIÓN DE PRUEBAS — Caso 13, Grupo 13 (PC06, avance T2)
+Fecha: 22/11/2026 | Python 3.13.18 | Node v22.23.5
+Archivos: diagnostico_pc.py, pruebas.py, pruebas_t2.py, index.html, verificacion/
+Nota: datos simulados; las rutas corresponden al entorno de prueba (~ = carpeta del usuario).
+
+==== 1. python -m py_compile diagnostico_pc.py pruebas.py pruebas_t2.py
+Sin errores de sintaxis.
+
+==== 2. python pruebas.py  (T01–T19 y 7 verificaciones de integración)
+T01 | Normal                       | esp: NORMAL      | obt: NORMAL           | APROBADO
+T02 | Espacio libre bajo (10 %)    | esp: ADVERTENCIA | obt: ADVERTENCIA      | APROBADO
+T03 | RAM crítica (90 %)           | esp: CRÍTICO     | obt: CRÍTICO          | APROBADO
+T04 | Límite RAM = 80 %            | esp: NORMAL      | obt: NORMAL           | APROBADO
+T05 | Límite libre = 15 %          | esp: NORMAL      | obt: NORMAL           | APROBADO
+T06 | Límite CPU = 85 % (30 min)   | esp: NORMAL      | obt: NORMAL           | APROBADO
+T07 | CPU 90 % por 5 min (pico)    | esp: ADVERTENCIA | obt: ADVERTENCIA      | APROBADO
+T08 | CPU 90 % por 10 min          | esp: CRÍTICO     | obt: CRÍTICO          | APROBADO
+T09 | HDD sin otras alertas        | esp: NORMAL      | obt: NORMAL +SSD      | APROBADO
+T10 | Combinación de alertas       | esp: CRÍTICO     | obt: CRÍTICO +SSD     | APROBADO
+ rechazado: CPU: 'abc' no es un número.
+ rechazado: RAM: 120 fuera de rango (debe estar entre 0 y 100).
+ rechazado: Disco: 'NVME' no válido (use: HDD, SSD).
+ rechazado: Libre: -5 fuera de rango (debe estar entre 0 y 100).
+T11 | Entradas inválidas            | rechazadas 4/4 | APROBADO
+T12 | RAM ya está en el máximo de la placa | APROBADO
+T13 | Sin ranuras libres                   | APROBADO
+T14 | Interfaz IDE (SSD no estándar)       | APROBADO
+T15 | Equipo sin ficha F01                 | APROBADO
+ rechazado: ID: no puede estar vacío.
+ rechazado: RAM máxima: 4 GB es menor que la RAM instalada (8 GB).
+T16 | Validación de la ficha F01            | rechazadas 2/2 | APROBADO
+ rechazado: Minutos: 'nan' no es un número finito.
+ rechazado: Minutos: 'inf' no es un número finito.
+ rechazado: Minutos: no puede ser negativo.
+T17 | Minutos no finitos o negativos        | rechazadas 3/3 | APROBADO
+T18 | Ficha DDR4 vs. DDR3 observado         | avisos 1 (control: 0) | APROBADO
+ rechazado: RAM instalada: 32 GB supera el máximo de la placa (8 GB).
+T19 | Ficha actualizada de HDD a SSD        | oportunidad SSD antes: True, después: False | APROBADO
+ Equipos de referencia cargados (PC-01, PC-02, PC-03) en: <carpeta_temporal>/fichas_equipos.json
+ [AVISO] El archivo de fichas estaba dañado; se guardó una copia en <carpeta_temporal>/fichas_equipos.bak.
+INT | F01 ficha guardada y recuperada | APROBADO
+INT | F05 reporte exportado y leído   | APROBADO
+INT | F05 tabla actual -> propuesta    | APROBADO
+INT | F01 carga de PC-01 a PC-03       | APROBADO
+INT | F01 archivo de fichas dañado     | APROBADO
+INT | F05 ID con caracteres no válidos | APROBADO
+INT | F05 reportes sin sobrescritura    | APROBADO
+TOTAL aprobados: 19 de 19
+Resultados guardados en: ~/Documents/Diagnostico_PC/resultados_pruebas.json
+
+==== 3. python pruebas_t2.py  (CP-01 a CP-10)
+CP-01 | Escenario Normal | APROBADO
+        esperado: NORMAL
+        obtenido: NORMAL
+CP-02 | Escenario Advertencia (libre 10 %) | APROBADO
+        esperado: ADVERTENCIA + liberar espacio
+        obtenido: ADVERTENCIA + liberar espacio
+CP-03 | Escenario Crítico (PC-01) | APROBADO
+        esperado: CRÍTICO; RAM 4 GB→8 GB; SSD SATA
+        obtenido: CRÍTICO; RAM 4 GB→8 GB; SSD SATA
+CP-04 | Valores límite RAM 80, libre 15, CPU 85 | APROBADO
+        esperado: NORMAL, NORMAL, NORMAL
+        obtenido: NORMAL, NORMAL, NORMAL
+CP-05 | CPU 90 %: 5 min frente a 10 min | APROBADO
+        esperado: ADVERTENCIA y CRÍTICO
+        obtenido: ADVERTENCIA y CRÍTICO
+CP-06 | HDD sin otras alertas | APROBADO
+        esperado: NORMAL + oportunidad SSD
+        obtenido: NORMAL + oportunidad SSD
+   rechazado: CPU: 'abc' no es un número.
+   rechazado: Minutos: no puede ser negativo.
+   rechazado: RAM: 120 fuera de rango (debe estar entre 0 y 100).
+   rechazado: Libre: -5 fuera de rango (debe estar entre 0 y 100).
+CP-07 | Entradas inválidas (E1) | APROBADO
+        esperado: Rechazar las 4 entradas
+        obtenido: Rechazadas 4/4
+CP-08 | Compatibilidad F04 con ficha PC-02 | APROBADO
+        esperado: Agregar módulo DDR4; 8 GB→16 GB
+        obtenido: Agregar módulo DDR4; 8 GB→16 GB
+CP-09 | Exportar reporte (F05) | APROBADO
+        esperado: 2 archivos; reporte_PC_01_prueba_…
+        obtenido: 2 archivos; reporte_PC_01_prueba_…
+ Equipos de referencia cargados (PC-01, PC-02, PC-03) en: <carpeta_temporal>/fichas_equipos.json
+ [AVISO] El archivo de fichas estaba dañado; se guardó una copia en <carpeta_temporal>/fichas_equipos.bak.
+CP-10 | Fichas F01: carga y archivo dañado | APROBADO
+        esperado: 3 fichas; copia .bak sin error
+        obtenido: 3 fichas; .bak creada
+TOTAL aprobados: 10 de 10
+Resultados guardados en: ~/Documents/Diagnostico_PC/resultados_t2.json
+
+==== 4. python verificacion/gen_py.py && node verificacion/comparar_web_python.js
+16464 casos; 36 validaciones
+casos comparados: 16464 diferencias: 0
+validaciones comparadas: 36 diferencias: 0
+
+==== 5. Sesión del menú: python diagnostico_pc.py (T18 y T19 en uso real; cada dato ingresado se muestra después del mensaje)
+Carpeta de datos (fichas y reportes): ~/Documents/Diagnostico_PC
+
+=== DIAGNÓSTICO DE VIDA ÚTIL DE PC ===
+1. Registrar equipo (F01)
+2. Evaluar equipo (F02-F05)
+3. Ver fichas registradas
+4. Cargar equipos de referencia (PC-01 a PC-03)
+5. Actualizar ficha (cambio de hardware)
+6. Salir
+Opción: 4
+ Equipos de referencia cargados (PC-01, PC-02, PC-03) en: ~/Documents/Diagnostico_PC/fichas_equipos.json
+
+=== DIAGNÓSTICO DE VIDA ÚTIL DE PC ===
+1. Registrar equipo (F01)
+2. Evaluar equipo (F02-F05)
+3. Ver fichas registradas
+4. Cargar equipos de referencia (PC-01 a PC-03)
+5. Actualizar ficha (cambio de hardware)
+6. Salir
+Opción: 2
+
+--- F02-F05: EVALUACIÓN DEL EQUIPO ---
+ID del equipo: PC-02
+ Ficha F01 encontrada.
+ Equipo de la Tabla 2. ¿Usar sus métricas de referencia? (S/N): S
+ Métricas de referencia: CPU 65 % (0 min), RAM 85 %, libre 60 %
+ ¿Confirmar la ficha con lo observado en el equipo? (S/N): S
+ Deje el campo vacío (Enter) si coincide con la ficha.
+ Tipo de RAM observado [DDR4]: DDR3
+ RAM instalada (GB) observado [8]: 
+ Tipo de disco observado [HDD]: 
+ Interfaz de almacenamiento observado [SATA]: 
+ [INCONSISTENCIA] Tipo de RAM: la ficha registra DDR4, pero se observó DDR3. Requiere validación técnica; las recomendaciones de este componente no deben aplicarse hasta confirmar el dato y actualizar la ficha (opción 5).
+
+============================================================
+REPORTE DE DIAGNÓSTICO - CASO 13 (datos simulados/ingresados)
+Equipo: PC-02     Fecha: 22/11/2026 07:22
+============================================================
+[Configuración actual - ficha F01]
+ CPU: Intel Core i5 (6.ª gen) | RAM: 8 GB DDR4 (máx. 16 GB, 1 ranura(s) libre(s))
+ Disco: HDD (SATA)
+[Validación de la ficha F01]
+ - [INCONSISTENCIA] Tipo de RAM: la ficha registra DDR4, pero se observó DDR3. Requiere validación técnica; las recomendaciones de este componente no deben aplicarse hasta confirmar el dato y actualizar la ficha (opción 5).
+[Métricas ingresadas]
+ CPU 65 % (0 min) | RAM 85 % | Disco HDD | Libre 60 %
+[Estado] CRÍTICO
+[Hallazgos]
+ - RAM > 80 %: posible presión de memoria. El uso efectivo de paginación requiere indicadores adicionales.
+ - OPORTUNIDAD DE MEJORA: el equipo usa HDD; evaluar migración a SSD (no cambia el estado por sí sola).
+[Configuración actual -> mejora propuesta]
+ RAM           8 GB DDR4             -> 16 GB DDR4 (agregar módulo)
+ Disco         HDD (SATA)            -> SSD SATA
+[Recomendaciones]
+ - Validar la ficha F01 antes de aplicar las recomendaciones: hay datos contradictorios.
+ - RAM: agregar módulo DDR4 (hasta 16 GB en total; 1 ranura(s) libre(s)). Verificar consumo sostenido.
+ - Disco: migración a SSD SATA viable según la ficha; confirmar espacio físico y clonación.
+[Nota] Reglas preliminares del proyecto; no sustituyen un diagnóstico técnico con cargas de trabajo representativas. Las recomendaciones de RAM y SSD son preliminares: no se han comprobado físicamente en el equipo.
+============================================================
+
+¿Exportar reporte a archivo local? (S/N): S
+ Reporte guardado en: ~/Documents/Diagnostico_PC/reporte_PC-02_20261122_072247.txt
+
+=== DIAGNÓSTICO DE VIDA ÚTIL DE PC ===
+1. Registrar equipo (F01)
+2. Evaluar equipo (F02-F05)
+3. Ver fichas registradas
+4. Cargar equipos de referencia (PC-01 a PC-03)
+5. Actualizar ficha (cambio de hardware)
+6. Salir
+Opción: 5
+
+--- F01: ACTUALIZAR FICHA (cambio de hardware) ---
+ID del equipo: PC-02
+ Deje el campo vacío (Enter) para conservar el valor actual.
+ Tipo de RAM [DDR4]: 
+ RAM instalada (GB) [8]: 
+ Tipo de disco [HDD]: SSD
+ Interfaz de almacenamiento [SATA]: 
+ Ficha de PC-02 actualizada en: ~/Documents/Diagnostico_PC/fichas_equipos.json. Vuelva a evaluar el equipo (opción 2).
+
+=== DIAGNÓSTICO DE VIDA ÚTIL DE PC ===
+1. Registrar equipo (F01)
+2. Evaluar equipo (F02-F05)
+3. Ver fichas registradas
+4. Cargar equipos de referencia (PC-01 a PC-03)
+5. Actualizar ficha (cambio de hardware)
+6. Salir
+Opción: 3
+ PC-01: Intel Core i3 (4.ª gen) | 4 GB DDR3 | HDD SATA
+ PC-02: Intel Core i5 (6.ª gen) | 8 GB DDR4 | SSD SATA | 1 cambio(s) registrado(s)
+ PC-03: AMD A8 | 4 GB DDR3 | HDD SATA
+
+=== DIAGNÓSTICO DE VIDA ÚTIL DE PC ===
+1. Registrar equipo (F01)
+2. Evaluar equipo (F02-F05)
+3. Ver fichas registradas
+4. Cargar equipos de referencia (PC-01 a PC-03)
+5. Actualizar ficha (cambio de hardware)
+6. Salir
+Opción: 2
+
+--- F02-F05: EVALUACIÓN DEL EQUIPO ---
+ID del equipo: PC-02
+ Ficha F01 encontrada.
+ Equipo de la Tabla 2. ¿Usar sus métricas de referencia? (S/N): S
+ Métricas de referencia: CPU 65 % (0 min), RAM 85 %, libre 60 %
+ ¿Confirmar la ficha con lo observado en el equipo? (S/N): N
+
+============================================================
+REPORTE DE DIAGNÓSTICO - CASO 13 (datos simulados/ingresados)
+Equipo: PC-02     Fecha: 22/11/2026 07:22
+============================================================
+[Configuración actual - ficha F01]
+ CPU: Intel Core i5 (6.ª gen) | RAM: 8 GB DDR4 (máx. 16 GB, 1 ranura(s) libre(s))
+ Disco: SSD (SATA)
+[Métricas ingresadas]
+ CPU 65 % (0 min) | RAM 85 % | Disco SSD | Libre 60 %
+[Estado] CRÍTICO
+[Hallazgos]
+ - RAM > 80 %: posible presión de memoria. El uso efectivo de paginación requiere indicadores adicionales.
+[Configuración actual -> mejora propuesta]
+ RAM           8 GB DDR4             -> 16 GB DDR4 (agregar módulo)
+ Disco         SSD (SATA)            -> sin cambio
+[Recomendaciones]
+ - RAM: agregar módulo DDR4 (hasta 16 GB en total; 1 ranura(s) libre(s)). Verificar consumo sostenido.
+[Nota] Reglas preliminares del proyecto; no sustituyen un diagnóstico técnico con cargas de trabajo representativas. Las recomendaciones de RAM y SSD son preliminares: no se han comprobado físicamente en el equipo.
+============================================================
+
+¿Exportar reporte a archivo local? (S/N): S
+ Reporte guardado en: ~/Documents/Diagnostico_PC/reporte_PC-02_20261122_072247_2.txt
+
+=== DIAGNÓSTICO DE VIDA ÚTIL DE PC ===
+1. Registrar equipo (F01)
+2. Evaluar equipo (F02-F05)
+3. Ver fichas registradas
+4. Cargar equipos de referencia (PC-01 a PC-03)
+5. Actualizar ficha (cambio de hardware)
+6. Salir
+Opción: 6

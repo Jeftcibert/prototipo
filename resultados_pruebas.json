@@ -1,0 +1,154 @@
+[
+ {
+  "id": "T01",
+  "desc": "Normal",
+  "entrada": "CPU 50 %, 0 min, RAM 30 %, SSD, libre 40 %",
+  "esperado": "NORMAL",
+  "obtenido": "NORMAL",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T02",
+  "desc": "Espacio libre bajo (10 %)",
+  "entrada": "CPU 40 %, 0 min, RAM 20 %, SSD, libre 10 %",
+  "esperado": "ADVERTENCIA",
+  "obtenido": "ADVERTENCIA",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T03",
+  "desc": "RAM crítica (90 %)",
+  "entrada": "CPU 58 %, 0 min, RAM 90 %, SSD, libre 40 %",
+  "esperado": "CRÍTICO",
+  "obtenido": "CRÍTICO",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T04",
+  "desc": "Límite RAM = 80 %",
+  "entrada": "CPU 50 %, 0 min, RAM 80 %, SSD, libre 40 %",
+  "esperado": "NORMAL",
+  "obtenido": "NORMAL",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T05",
+  "desc": "Límite libre = 15 %",
+  "entrada": "CPU 40 %, 0 min, RAM 20 %, SSD, libre 15 %",
+  "esperado": "NORMAL",
+  "obtenido": "NORMAL",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T06",
+  "desc": "Límite CPU = 85 % (30 min)",
+  "entrada": "CPU 85 %, 30 min, RAM 40 %, SSD, libre 40 %",
+  "esperado": "NORMAL",
+  "obtenido": "NORMAL",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T07",
+  "desc": "CPU 90 % por 5 min (pico)",
+  "entrada": "CPU 90 %, 5 min, RAM 40 %, SSD, libre 40 %",
+  "esperado": "ADVERTENCIA",
+  "obtenido": "ADVERTENCIA",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T08",
+  "desc": "CPU 90 % por 10 min",
+  "entrada": "CPU 90 %, 10 min, RAM 40 %, SSD, libre 40 %",
+  "esperado": "CRÍTICO",
+  "obtenido": "CRÍTICO",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T09",
+  "desc": "HDD sin otras alertas",
+  "entrada": "CPU 50 %, 0 min, RAM 30 %, HDD, libre 40 %",
+  "esperado": "NORMAL",
+  "obtenido": "NORMAL + oportunidad SSD",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T10",
+  "desc": "Combinación de alertas",
+  "entrada": "CPU 90 %, 15 min, RAM 95 %, HDD, libre 10 %",
+  "esperado": "CRÍTICO",
+  "obtenido": "CRÍTICO + oportunidad SSD",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T11",
+  "desc": "Entradas inválidas",
+  "entrada": "CPU 'abc'; RAM 120; disco 'NVME'; libre -5",
+  "esperado": "Rechazar las 4 entradas",
+  "obtenido": "Rechazadas 4/4",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T12",
+  "desc": "RAM ya está en el máximo de la placa",
+  "entrada": "RAM 8/8 GB, uso 90 %",
+  "esperado": "Sin ampliación posible",
+  "obtenido": "Sin ampliación posible",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T13",
+  "desc": "Sin ranuras libres",
+  "entrada": "RAM 4/8 GB, 0 ranuras, uso 90 %",
+  "esperado": "Sustituir módulos (no agregar)",
+  "obtenido": "Sustituir módulos (no agregar)",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T14",
+  "desc": "Interfaz IDE (SSD no estándar)",
+  "entrada": "HDD con interfaz IDE",
+  "esperado": "Requiere validación técnica",
+  "obtenido": "Requiere validación técnica",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T15",
+  "desc": "Equipo sin ficha F01",
+  "entrada": "RAM 90 %, HDD, sin ficha",
+  "esperado": "Compatibilidad sujeta a validación",
+  "obtenido": "Compatibilidad sujeta a validación",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T16",
+  "desc": "Validación de la ficha F01",
+  "entrada": "ID vacío; RAM máxima 4 GB con 8 GB instalados",
+  "esperado": "Rechazar las 2 entradas",
+  "obtenido": "Rechazadas 2/2",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T17",
+  "desc": "Minutos no finitos o negativos",
+  "entrada": "minutos «nan», «inf» y −3",
+  "esperado": "Rechazar las 3 entradas",
+  "obtenido": "Rechazadas 3/3",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T18",
+  "desc": "Datos contradictorios ficha / diagnóstico",
+  "entrada": "Ficha DDR4; se observa DDR3 (control: DDR4 coincide)",
+  "esperado": "Aviso de inconsistencia y validación técnica",
+  "obtenido": "1 aviso de inconsistencia; control sin aviso; aviso incluido en el reporte",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "T19",
+  "desc": "Cambio de hardware después del registro",
+  "entrada": "Ficha con HDD; se actualiza a SSD y se vuelve a evaluar (además, RAM 32 GB > máx. 8 GB)",
+  "esperado": "Ficha actualizada con historial y nueva evaluación sin oportunidad SSD",
+  "obtenido": "Ficha SSD con 1 cambio en el historial; sin oportunidad SSD; cambio inválido rechazado",
+  "estado": "APROBADO"
+ }
+]

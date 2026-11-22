@@ -1,0 +1,82 @@
+[
+ {
+  "id": "CP-01",
+  "desc": "Escenario Normal",
+  "entrada": "CPU 50 %, 0 min, RAM 30 %, SSD, libre 40 %",
+  "esperado": "NORMAL",
+  "obtenido": "NORMAL",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "CP-02",
+  "desc": "Escenario Advertencia (libre 10 %)",
+  "entrada": "CPU 40 %, 0 min, RAM 20 %, SSD, libre 10 %",
+  "esperado": "ADVERTENCIA + liberar espacio",
+  "obtenido": "ADVERTENCIA + liberar espacio",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "CP-03",
+  "desc": "Escenario Crítico (PC-01)",
+  "entrada": "CPU 90 %, 15 min, RAM 95 %, HDD SATA, libre 40 %",
+  "esperado": "CRÍTICO; RAM 4 GB→8 GB; SSD SATA",
+  "obtenido": "CRÍTICO; RAM 4 GB→8 GB; SSD SATA",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "CP-04",
+  "desc": "Valores límite RAM 80, libre 15, CPU 85",
+  "entrada": "RAM 80 %; libre 15 %; CPU 85 % con 30 min",
+  "esperado": "NORMAL, NORMAL, NORMAL",
+  "obtenido": "NORMAL, NORMAL, NORMAL",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "CP-05",
+  "desc": "CPU 90 %: 5 min frente a 10 min",
+  "entrada": "CPU 90 % con 5 min y con 10 min; RAM 40 %; libre 40 %",
+  "esperado": "ADVERTENCIA y CRÍTICO",
+  "obtenido": "ADVERTENCIA y CRÍTICO",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "CP-06",
+  "desc": "HDD sin otras alertas",
+  "entrada": "CPU 50 %, 0 min, RAM 30 %, HDD, libre 40 %",
+  "esperado": "NORMAL + oportunidad SSD",
+  "obtenido": "NORMAL + oportunidad SSD",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "CP-07",
+  "desc": "Entradas inválidas (E1)",
+  "entrada": "CPU «abc»; minutos −3; RAM 120; libre −5",
+  "esperado": "Rechazar las 4 entradas",
+  "obtenido": "Rechazadas 4/4",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "CP-08",
+  "desc": "Compatibilidad F04 con ficha PC-02",
+  "entrada": "RAM 85 %; ficha 8 GB DDR4, máx. 16 GB, 1 ranura libre",
+  "esperado": "Agregar módulo DDR4; 8 GB→16 GB",
+  "obtenido": "Agregar módulo DDR4; 8 GB→16 GB",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "CP-09",
+  "desc": "Exportar reporte (F05)",
+  "entrada": "ID «PC/01 prueba»; dos exportaciones seguidas",
+  "esperado": "2 archivos; reporte_PC_01_prueba_…",
+  "obtenido": "2 archivos; reporte_PC_01_prueba_…",
+  "estado": "APROBADO"
+ },
+ {
+  "id": "CP-10",
+  "desc": "Fichas F01: carga y archivo dañado",
+  "entrada": "Cargar PC-01 a PC-03; luego un JSON dañado",
+  "esperado": "3 fichas; copia .bak sin error",
+  "obtenido": "3 fichas; .bak creada",
+  "estado": "APROBADO"
+ }
+]
